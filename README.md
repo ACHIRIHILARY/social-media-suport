@@ -1,29 +1,43 @@
-# Christian Ministry Donation Landing Page
+# Hope For The Poor - Donation & Prayer Platform
 
-Simple PHP + MySQL landing page for ministry donations and prayer requests.
+A lightweight, devotion-inspired web platform built with PHP 8.1+ and MySQL for ministry donations and prayer requests.
 
-Setup
-1. Create a MySQL database (example name: `ministry_db`).
-2. Update database credentials in `inc/config.php`.
-3. Import the SQL schema in `sql/schema.sql`.
-4. Deploy to a PHP-capable host (PHP 7.4+ recommended).
+## Setup & Installation
 
-Files
-- `index.php` — main landing page
-- `inc/config.php` — DB credentials (edit)
-- `inc/db.php` — PDO connection
-- `process_prayer.php` — handles prayer request submissions (AJAX)
-- `process_donation.php` — creates donation record and returns payment link (AJAX)
-- `css/style.css` — styles
-- `js/main.js` — client JS (forms, counters)
-- `sql/schema.sql` — table creation SQL
+1. **Environment Configuration:**
+   Copy the `.env.example` to `.env` and fill in your database credentials and Fapshi API keys.
+   *(Note: The current environment is already set up and connected to the `ministry_db` database).*
 
-Fapshi Integration
-The project includes a placeholder payment flow in `process_donation.php` that returns a `payment_url`. Replace the placeholder with your Fapshi API integration using server-side API keys.
+2. **Web Server Root:**
+   Configure your web server (Apache/Nginx/Localhost) to serve the **`public/`** directory as the document root. The `src/` folder and `.env` file should remain outside the public web root for security.
 
-Security
-- Uses PDO with prepared statements.
-- Basic input validation implemented. Update and harden for production.
+   *To test locally, run this command from the project root:*
+   ```bash
+   php -S localhost:8000 -t public
+   ```
 
-Images
-Place testimonial and hero images inside the `images/` folder. Example names used: `hero.jpg`, `testimonial1.jpg`, `testimonial2.jpg`, `testimonial3.jpg`.
+## Admin Dashboard
+
+The platform includes a secure backend to manage donations and prayers.
+
+**Access the dashboard here:**
+`http://localhost:8000/admin/login.php` (Adjust the port/domain based on your setup)
+
+**Credentials:**
+- **Username:** `admin`
+- **Password:** `password123`
+
+You can generate new passwords or accounts using the CLI script: 
+`php scripts/seed_admin.php <username> <password>`
+
+## Transaction Logging & Fapshi Integration
+
+Every donation attempt is securely logged in the `donations` database table.
+- **Transaction IDs:** When a payment is initiated, the unique Fapshi `transId` is securely recorded in the `reference` column.
+- **Audit Trails:** Upon a completed payment or a webhook callback, the full JSON response received from Fapshi is stored in the `fapshi_payload` column. This ensures you have a permanent and auditable record of every transaction exactly as the bank/gateway reported it.
+
+## Architecture
+
+- **`public/`**: Accessible to the web. Contains `index.php`, `donate.php`, `callback.php`, the admin portal, and `assets/` (CSS/Images).
+- **`src/`**: Secure application logic. Contains database configs, environment parsers, and security helpers (CSRF, Rate Limiting).
+- **`scripts/`**: CLI scripts for database migrations and admin seeding.
