@@ -6,38 +6,47 @@ require_once __DIR__ . '/../src/helpers/csrf.php';
 require_once __DIR__ . '/../src/helpers/sanitize.php';
 require_once __DIR__ . '/../src/helpers/rate_limiter.php';
 
-initSession();
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    validateCsrfToken($_POST['csrf_token'] ?? '');
-    checkRateLimit('donate', 10, 3600); // 10 per hour
-
-    $amount = sanitizeInt($_POST['amount'] ?? null);
-    $isAnonymous = isset($_POST['anonymous']);
-    
-    $name = $isAnonymous ? null : sanitizeString($_POST['name'] ?? null);
-    $email = $isAnonymous ? null : sanitizeEmail($_POST['email'] ?? null);
-    $phone = sanitizeString($_POST['phone'] ?? null);
-
-    if (!$amount || $amount < 100) {
-        $error = "Minimum donation amount is 100 XAF.";
-    }
-
     if (!$error) {
-        // Insert pending donation
-        $pdo = getDbConnection();
-        $stmt = $pdo->prepare("
-            INSERT INTO donations (reference, amount, donor_name, donor_email, donor_phone, ip_address)
-            VALUES (?, ?, ?, ?, ?, INET6_ATON(?))
-        ");
-        
-        // We need a temporary reference until Fapshi returns the real one
-        $tempRef = 'TMP_' . bin2hex(random_bytes(16));
-        $stmt->execute([$tempRef, $amount, $name, $email, $phone, getIpAddress()]);
-        $donationId = $pdo->lastInsertId();
+        // Prepare Fapshi payload and initiate payment first (safer: avoid orphan DB rows)
+        $redirectUrl = SITE_URL . '/thank-you.php';
+        $payload = [
+            'amount' => $amount,
+            'email' => $email ?? 'anonymous@example.com',
+            'redirectUrl' => $redirectUrl,
+            'message' => 'Donation to Hope For The Poor'
+        ];
 
+        $fapshiRes = callFapshi('/initiate-pay', $payload);
+
+        if (!($fapshiRes['status'] >= 200 && $fapshiRes['status'] < 300 && isset($fapshiRes['body']['link']) && isset($fapshiRes['body']['transId']))) {
+            error_log('Fapshi initiate-pay failed: ' . json_encode($fapshiRes));
+            $error = "Payment gateway error. Please try again later.";
+        } else {
+            // Fapshi returned a transaction id; persist the donation with that reference
+            $transId = $fapshiRes['body']['transId'];
+            try {
+                $pdo = getDbConnection();
+                $stmt = $pdo->prepare(
+                    "INSERT INTO donations (reference, amount, donor_name, donor_email, donor_phone, ip_address) VALUES (?, ?, ?, ?, ?, INET6_ATON(?))"
+                );
+                $stmt->execute([$transId, $amount, $name, $email, $phone, getIpAddress()]);
+                // redirect user to Fapshi payment link
+                header('Location: ' . $fapshiRes['body']['link']);
+                exit;
+            } catch (Exception $e) {
+                // DB failed after Fapshi succeeded: try to expire the payment and log
+                error_log('Donate DB insert failed after Fapshi success: ' . $e->getMessage());
+                // attempt to expire the payment to avoid dangling transactions
+                try {
+                    callFapshi('/expire-pay', ['transId' => $transId]);
+                } catch (Exception $ex) {
+                    error_log('Failed to call expire-pay: ' . $ex->getMessage());
+                }
+                $error = "A server error occurred. Payment was not completed. Please contact support.";
+            }
+        }
+    }
+    if (!$error) {
         // Call Fapshi
         $redirectUrl = SITE_URL . '/thank-you.php';
         $payload = [
@@ -57,7 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . $fapshiRes['body']['link']);
             exit;
         } else {
-            // Clean up or mark failed
+            error_log('Fapshi initiate-pay failed: ' . json_encode($fapshiRes));
+            if (!empty($fapshiRes['curl_error'])) {
+                error_log('Fapshi curl error: ' . $fapshiRes['curl_error']);
+            }
             $stmt = $pdo->prepare("UPDATE donations SET status = 'failed', fapshi_payload = ? WHERE id = ?");
             $stmt->execute([json_encode($fapshiRes['body']), $donationId]);
             $error = "Payment gateway error. Please try again later.";

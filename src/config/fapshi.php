@@ -34,11 +34,18 @@ function callFapshi($endpoint, $payload = [], $method = 'POST') {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     
     $response = curl_exec($ch);
+    $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
+
+    $decoded = json_decode($response, true);
+    if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+        $decoded = $response;
+    }
     
     return [
         'status' => $httpCode,
-        'body' => json_decode($response, true) ?? $response
+        'body' => $decoded,
+        'curl_error' => $curlError ?: null
     ];
 }
