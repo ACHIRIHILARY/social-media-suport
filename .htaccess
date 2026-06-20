@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Protect sensitive files and directories from public access
+    RewriteRule ^(\.env|\.git) - [F,L,NC]
+    RewriteRule ^(src|scripts|images)(/.*)?$ - [F,L,NC]
+
+    # 2. Route all traffic to the /public folder
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Disable directory browsing globally
+Options -Indexes
