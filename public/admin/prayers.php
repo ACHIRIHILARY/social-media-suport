@@ -81,7 +81,6 @@ $prayers = $stmt->fetchAll();
         <div class="logo" style="color: #fff;">Admin Dashboard</div>
         <nav class="admin-nav">
             <a href="dashboard.php">Overview</a>
-            <a href="donations.php">Donations</a>
             <a href="prayers.php" style="font-weight: bold;">Prayers</a>
             <a href="logout.php">Logout</a>
         </nav>

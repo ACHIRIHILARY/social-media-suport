@@ -18,7 +18,7 @@
         <nav>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
-                <li><a href="/donate.php">Donate</a></li>
+                <li><a href="https://donate.fapshi.com/34634123" target="_blank" rel="noopener noreferrer">Donate</a></li>
                 <li><a href="/prayer.php">Prayer Request</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
@@ -31,7 +31,7 @@
         <h1>Hope For The Poor</h1>
         <p>A lightweight, devotion-inspired platform. Join hands with us to bring hope and light to those in need.</p>
         <div class="hero-buttons">
-            <a href="/donate.php" class="btn">Give Now</a>
+            <a href="https://donate.fapshi.com/34634123" target="_blank" rel="noopener noreferrer" class="btn">Give Now</a>
             <a href="/prayer.php" class="btn btn-accent">Send Prayer</a>
         </div>
     </div>

@@ -5,26 +5,6 @@ require_once __DIR__ . '/../src/config/database.php';
 $pdo = getDbConnection();
 
 $sql = "
--- ─────────────────────────────────────────
--- Table: donations
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS donations (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    reference       VARCHAR(64)  NOT NULL UNIQUE,
-    amount          INT UNSIGNED NOT NULL,
-    currency        CHAR(3)      NOT NULL DEFAULT 'XAF',
-    donor_name      VARCHAR(120) DEFAULT NULL,
-    donor_email     VARCHAR(254) DEFAULT NULL,
-    donor_phone     VARCHAR(20)  DEFAULT NULL,
-    status          ENUM('pending','completed','failed','cancelled') NOT NULL DEFAULT 'pending',
-    fapshi_payload  JSON         DEFAULT NULL,
-    ip_address      VARBINARY(16) NOT NULL,
-    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_status    (status),
-    INDEX idx_created   (created_at),
-    INDEX idx_reference (reference)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ─────────────────────────────────────────
 -- Table: prayer_requests
